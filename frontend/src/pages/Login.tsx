@@ -8,9 +8,49 @@ import { toast } from "@/components/ui/sonner";
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast(isLogin ? "Logged in successfully!" : "Account created successfully!");
+    setIsLoading(true);
+
+    try {
+      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/signup";
+      const payload = isLogin ? { email, password } : { email, password, name: "New User", mobile: "0000000000" };
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Something went wrong");
+      }
+
+      if (isLogin) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        toast.success("Logged in successfully!");
+
+        if (data.user.role === "admin") {
+          window.location.href = "/admin";
+        } else {
+          window.location.href = "/";
+        }
+      } else {
+        toast.success("Account created! Please log in.");
+        setIsLogin(true);
+      }
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -46,13 +86,31 @@ export default function Login() {
             {!isLogin && (
               <div><Label>Full Name</Label><Input required placeholder="John Doe" /></div>
             )}
-            <div><Label>Email</Label><Input type="email" required placeholder="john@example.com" /></div>
-            <div><Label>Password</Label><Input type="password" required placeholder="••••••••" /></div>
+            <div>
+              <Label>Email</Label>
+              <Input
+                type="email"
+                required
+                placeholder="john@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Password</Label>
+              <Input
+                type="password"
+                required
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
             {!isLogin && (
               <div><Label>Confirm Password</Label><Input type="password" required placeholder="••••••••" /></div>
             )}
-            <Button type="submit" className="w-full rounded-full">
-              {isLogin ? "Sign In" : "Create Account"}
+            <Button type="submit" className="w-full rounded-full" disabled={isLoading}>
+              {isLoading ? "Processing..." : (isLogin ? "Sign In" : "Create Account")}
             </Button>
           </form>
         </div>

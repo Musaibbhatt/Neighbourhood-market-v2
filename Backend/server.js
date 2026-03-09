@@ -53,6 +53,7 @@ app.use('/api/store-config', require('./routes/storeConfig'));
 app.use('/api/offers', require('./routes/offers'));
 app.use('/api/coupons', require('./routes/coupons'));
 app.use('/api/admin-users', require('./routes/adminUsers'));
+app.use('/api/admin/analytics', require('./routes/analytics'));
 
 // Health check
 app.get('/api/health', (req, res) => {
