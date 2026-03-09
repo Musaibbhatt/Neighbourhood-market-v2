@@ -60,11 +60,11 @@ app.get('/api/health', (req, res) => {
 });
 
 // Serve frontend build
-app.use(express.static(path.join(__dirname, "../freshcart-revamp-main/dist")));
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
 // Catch-all handler for frontend routes
 app.use((req, res) => {
-  res.sendFile(path.join(__dirname, "../freshcart-revamp-main/dist/index.html"));
+  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
 });
 
 // Start server
