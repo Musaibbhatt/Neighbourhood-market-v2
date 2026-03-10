@@ -3,6 +3,7 @@ import { ShoppingCart, Menu, X, Search, MapPin, User } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import CartSidebar from "./CartSidebar";
 import { Input } from "@/components/ui/input";
 
 const navLinks = [
@@ -73,8 +74,8 @@ export default function Navbar() {
               <User className="h-5 w-5" />
             </Button>
           </Link>
-          <Link to="/cart" className="relative">
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
+          <CartSidebar>
+            <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-primary">
               <ShoppingCart className="h-5 w-5" />
               {totalItems > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-secondary text-[11px] font-bold flex items-center justify-center text-secondary-foreground">
@@ -82,7 +83,7 @@ export default function Navbar() {
                 </span>
               )}
             </Button>
-          </Link>
+          </CartSidebar>
           <Button
             variant="ghost"
             size="icon"
