@@ -10,13 +10,17 @@ const roleMiddleware = require('../middleware/roleMiddleware');
 // @access  Public
 router.get('/', async (req, res) => {
     try {
-        const { search, category, brand, isOrganic, isGlutenFree, isVegan, tags, limit } = req.query;
+        const {
+            search, category, brand, isOrganic, isGlutenFree, isVegan, isLocal,
+            tags, limit, minPrice, maxPrice, page = 1, sort
+        } = req.query;
         let query = {};
 
         if (search) {
             query.$or = [
                 { name: { $regex: search, $options: 'i' } },
-                { brand: { $regex: search, $options: 'i' } }
+                { brand: { $regex: search, $options: 'i' } },
+                { dietaryTags: { $regex: search, $options: 'i' } }
             ];
         }
         if (category) {
@@ -34,18 +38,46 @@ router.get('/', async (req, res) => {
         if (isVegan === 'true') {
             query.isVegan = true;
         }
+        if (isLocal === 'true') {
+            query.isLocal = true;
+        }
         if (tags) {
             query.dietaryTags = { $in: tags.split(',') };
         }
 
-        let productsQuery = Product.find(query).populate('category', 'name').sort({ createdAt: -1 });
-
-        if (limit) {
-            productsQuery = productsQuery.limit(parseInt(limit));
+        if (minPrice || maxPrice) {
+            query.basePrice = {};
+            if (minPrice) query.basePrice.$gte = parseFloat(minPrice);
+            if (maxPrice) query.basePrice.$lte = parseFloat(maxPrice);
         }
 
-        const products = await productsQuery;
-        res.json(products);
+        let sortOption = { createdAt: -1 };
+        if (sort) {
+            switch (sort) {
+                case 'price-low': sortOption = { basePrice: 1 }; break;
+                case 'price-high': sortOption = { basePrice: -1 }; break;
+                case 'rating': sortOption = { averageRating: -1 }; break;
+                case 'name': sortOption = { name: 1 }; break;
+            }
+        }
+
+        const itemsPerPage = limit ? parseInt(limit) : 12;
+        const skip = (parseInt(page) - 1) * itemsPerPage;
+
+        const products = await Product.find(query)
+            .populate('category', 'name')
+            .sort(sortOption)
+            .skip(skip)
+            .limit(itemsPerPage);
+
+        const total = await Product.countDocuments(query);
+
+        res.json({
+            products,
+            total,
+            page: parseInt(page),
+            pages: Math.ceil(total / itemsPerPage)
+        });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

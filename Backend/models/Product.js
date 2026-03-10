@@ -38,6 +38,10 @@ const productSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    isLocal: {
+        type: Boolean,
+        default: false
+    },
     isGlutenFree: {
         type: Boolean,
         default: false

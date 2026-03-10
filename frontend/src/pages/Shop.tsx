@@ -1,121 +1,333 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import ProductCard from "@/components/ProductCard";
-import { products, categories } from "@/lib/data";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, ChevronDown, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
+import { useInView } from "react-intersection-observer";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger
+} from "@/components/ui/sheet";
 
 export default function Shop() {
-  const [searchParams] = useSearchParams();
-  const initialSearch = searchParams.get("search") || "";
-  const initialCategory = searchParams.get("category") || "";
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [search, setSearch] = useState(initialSearch);
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-  const [sortBy, setSortBy] = useState("default");
+  // State for filters
+  const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "");
+  const [sortBy, setSortBy] = useState(searchParams.get("sort") || "default");
+  const [priceRange, setPriceRange] = useState([0, 100]);
+  const [filters, setFilters] = useState({
+    isOrganic: searchParams.get("isOrganic") === "true",
+    isGlutenFree: searchParams.get("isGlutenFree") === "true",
+    isVegan: searchParams.get("isVegan") === "true",
+    isLocal: searchParams.get("isLocal") === "true",
+  });
+  const [selectedTags, setSelectedTags] = useState<string[]>(searchParams.get("tags")?.split(",").filter(Boolean) || []);
+  const [selectedBrand, setSelectedBrand] = useState(searchParams.get("brand") || "all");
+  const [brands, setBrands] = useState<string[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
 
-  const filtered = useMemo(() => {
-    let result = [...products];
+  // Infinite Scroll state
+  const [products, setProducts] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const { ref, inView } = useInView();
 
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(p => p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q));
+  // Initial data fetch
+  useEffect(() => {
+    fetch('/api/categories').then(res => res.json()).then(setCategories);
+    fetch('/api/products/brands').then(res => res.json()).then(setBrands);
+  }, []);
+
+  // Fetch products
+  const fetchProducts = useCallback(async (pageNum: number, isNewSearch: boolean = false) => {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (selectedCategory && selectedCategory !== 'all') params.append('category', selectedCategory);
+      if (selectedBrand && selectedBrand !== 'all') params.append('brand', selectedBrand);
+      if (sortBy !== 'default') params.append('sort', sortBy);
+      if (filters.isOrganic) params.append('isOrganic', 'true');
+      if (filters.isGlutenFree) params.append('isGlutenFree', 'true');
+      if (filters.isVegan) params.append('isVegan', 'true');
+      if (filters.isLocal) params.append('isLocal', 'true');
+      if (selectedTags.length > 0) params.append('tags', selectedTags.join(','));
+      params.append('minPrice', priceRange[0].toString());
+      params.append('maxPrice', priceRange[1].toString());
+      params.append('page', pageNum.toString());
+      params.append('limit', '12');
+
+      const res = await fetch(`/api/products?${params.toString()}`);
+      const data = await res.json();
+
+      if (isNewSearch) {
+        setProducts(data.products);
+      } else {
+        setProducts(prev => [...prev, ...data.products]);
+      }
+
+      setHasMore(data.page < data.pages);
+      setPage(data.page);
+    } catch (error) {
+      console.error("Failed to fetch products:", error);
+    } finally {
+      setIsLoading(false);
     }
-    if (selectedCategory) {
-      result = result.filter(p => p.category === selectedCategory);
-    }
+  }, [search, selectedCategory, selectedBrand, sortBy, filters, priceRange]);
 
-    switch (sortBy) {
-      case "price-low": result.sort((a, b) => a.basePrice - b.basePrice); break;
-      case "price-high": result.sort((a, b) => b.basePrice - a.basePrice); break;
-      case "rating": result.sort((a, b) => b.averageRating - a.averageRating); break;
-      case "name": result.sort((a, b) => a.name.localeCompare(b.name)); break;
-    }
+  // Handle filter changes
+  useEffect(() => {
+    setPage(1);
+    fetchProducts(1, true);
 
-    return result;
-  }, [search, selectedCategory, sortBy]);
+    // Update URL params
+    const newParams = new URLSearchParams();
+    if (search) newParams.set("search", search);
+    if (selectedCategory) newParams.set("category", selectedCategory);
+    if (selectedBrand && selectedBrand !== 'all') newParams.set("brand", selectedBrand);
+    if (sortBy !== 'default') newParams.set("sort", sortBy);
+    if (filters.isOrganic) newParams.set("isOrganic", "true");
+    if (filters.isGlutenFree) newParams.set("isGlutenFree", "true");
+    if (filters.isVegan) newParams.set("isVegan", "true");
+    if (filters.isLocal) newParams.set("isLocal", "true");
+    if (selectedTags.length > 0) newParams.set("tags", selectedTags.join(","));
+    setSearchParams(newParams);
+  }, [search, selectedCategory, selectedBrand, sortBy, filters, selectedTags, priceRange, fetchProducts, setSearchParams]);
+
+  // Load more on scroll
+  useEffect(() => {
+    if (inView && hasMore && !isLoading) {
+      fetchProducts(page + 1);
+    }
+  }, [inView, hasMore, isLoading, page, fetchProducts]);
+
+  const FilterContent = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="font-semibold mb-4">Price Range</h3>
+        <Slider
+          defaultValue={[0, 100]}
+          max={100}
+          step={1}
+          value={priceRange}
+          onValueChange={setPriceRange}
+          className="mb-2"
+        />
+        <div className="flex justify-between text-sm text-muted-foreground">
+          <span>${priceRange[0]}</span>
+          <span>${priceRange[1]}</span>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="font-semibold mb-4">Dietary & Preferences</h3>
+        <div className="space-y-3">
+          {Object.entries(filters).map(([key, value]) => (
+            <div key={key} className="flex items-center space-x-2">
+              <Checkbox
+                id={key}
+                checked={value}
+                onCheckedChange={(checked) => setFilters(prev => ({ ...prev, [key]: checked === true }))}
+              />
+              <label htmlFor={key} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize">
+                {key.replace('is', '').replace(/([A-Z])/g, ' $1').trim()}
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="font-semibold mb-4">Dietary Tags</h3>
+        <div className="flex flex-wrap gap-2">
+          {['Dairy-Free', 'Nut-Free', 'Keto', 'Paleo', 'Sugar-Free', 'Non-GMO'].map(tag => (
+            <Badge
+              key={tag}
+              variant={selectedTags.includes(tag) ? "default" : "outline"}
+              className="cursor-pointer"
+              onClick={() => {
+                setSelectedTags(prev =>
+                  prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+                );
+              }}
+            >
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="font-semibold mb-4">Brand</h3>
+        <Select value={selectedBrand} onValueChange={setSelectedBrand}>
+          <SelectTrigger>
+            <SelectValue placeholder="All Brands" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Brands</SelectItem>
+            {brands.map(brand => (
+              <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
 
   return (
     <Layout>
-      <div className="container py-8">
-        <h1 className="font-display text-3xl md:text-4xl font-bold mb-8">Shop</h1>
+      <div className="container py-8 relative">
+        <h1 className="font-display text-3xl md:text-4xl font-bold mb-8">Shop Groceries</h1>
 
-        {/* Filters Bar */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-8">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search products..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-9"
-            />
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Sidebar Filters - Desktop */}
+          <aside className="hidden lg:block w-64 shrink-0">
+            <div className="sticky top-24 space-y-8 bg-card border rounded-xl p-6 h-fit">
+              <div className="flex items-center justify-between">
+                <h2 className="font-bold flex items-center gap-2">
+                  <SlidersHorizontal size={18} />
+                  Filters
+                </h2>
+                <Button variant="ghost" size="sm" onClick={() => {
+                  setPriceRange([0, 100]);
+                  setFilters({ isOrganic: false, isGlutenFree: false, isVegan: false, isLocal: false });
+                  setSelectedBrand("all");
+                }}>
+                  Reset
+                </Button>
+              </div>
+              <FilterContent />
+            </div>
+          </aside>
+
+          <div className="flex-1">
+            {/* Top Bar - Pinned on Mobile/Desktop */}
+            <div className="sticky top-16 z-30 bg-background/95 backdrop-blur py-4 mb-8 -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search products, brands, tags..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="pl-9 bg-muted/50 border-0"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" className="lg:hidden">
+                        <SlidersHorizontal className="mr-2 h-4 w-4" />
+                        Filters
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left">
+                      <SheetHeader>
+                        <SheetTitle>Filters</SheetTitle>
+                      </SheetHeader>
+                      <div className="py-6">
+                        <FilterContent />
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="default">Newest First</SelectItem>
+                      <SelectItem value="price-low">Price: Low to High</SelectItem>
+                      <SelectItem value="price-high">Price: High to Low</SelectItem>
+                      <SelectItem value="rating">Top Rated</SelectItem>
+                      <SelectItem value="name">Name A-Z</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Quick Category Bar */}
+              <div className="flex gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
+                <Button
+                  variant={!selectedCategory || selectedCategory === "all" ? "default" : "secondary"}
+                  size="sm"
+                  className="rounded-full shrink-0"
+                  onClick={() => setSelectedCategory("all")}
+                >
+                  All
+                </Button>
+                {categories.map(c => (
+                  <Button
+                    key={c._id}
+                    variant={selectedCategory === c._id ? "default" : "secondary"}
+                    size="sm"
+                    className="rounded-full shrink-0"
+                    onClick={() => setSelectedCategory(c._id)}
+                  >
+                    {c.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Results Grid */}
+            {products.length === 0 && !isLoading ? (
+              <div className="text-center py-20 bg-muted/20 rounded-2xl border-2 border-dashed">
+                <p className="text-lg text-muted-foreground">No products found. Try adjusting your filters.</p>
+                <Button variant="link" onClick={() => {
+                  setSearch("");
+                  setSelectedCategory("all");
+                  setSelectedBrand("all");
+                  setFilters({ isOrganic: false, isGlutenFree: false, isVegan: false, isLocal: false });
+                }}>Clear all filters</Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                {products.map((p, idx) => (
+                  <ProductCard key={p._id || idx} product={{
+                    id: p._id,
+                    name: p.name,
+                    brand: p.brand,
+                    category: p.category.name,
+                    basePrice: p.basePrice,
+                    salePrice: p.salePrice,
+                    image: p.imageURL || "/placeholder.svg",
+                    stock: p.stock,
+                    averageRating: p.averageRating,
+                    reviewCount: p.numReviews,
+                    description: p.description,
+                    unit: p.unit || "unit"
+                  }} />
+                ))}
+              </div>
+            )}
+
+            {/* Infinite Scroll Trigger */}
+            <div ref={ref} className="py-10 flex justify-center w-full">
+              {isLoading && (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                  <p className="text-sm text-muted-foreground">Loading more products...</p>
+                </div>
+              )}
+              {!hasMore && products.length > 0 && (
+                <p className="text-sm text-muted-foreground">You've reached the end of the catalog.</p>
+              )}
+            </div>
           </div>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map(c => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-full sm:w-[160px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="default">Default</SelectItem>
-              <SelectItem value="price-low">Price: Low to High</SelectItem>
-              <SelectItem value="price-high">Price: High to Low</SelectItem>
-              <SelectItem value="rating">Top Rated</SelectItem>
-              <SelectItem value="name">Name A-Z</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
-
-        {/* Category Pills */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          <Button
-            variant={!selectedCategory || selectedCategory === "all" ? "default" : "outline"}
-            size="sm"
-            className="rounded-full"
-            onClick={() => setSelectedCategory("")}
-          >
-            All
-          </Button>
-          {categories.map(c => (
-            <Button
-              key={c.id}
-              variant={selectedCategory === c.id ? "default" : "outline"}
-              size="sm"
-              className="rounded-full"
-              onClick={() => setSelectedCategory(c.id)}
-            >
-              {c.icon} {c.name}
-            </Button>
-          ))}
-        </div>
-
-        {/* Results */}
-        <p className="text-sm text-muted-foreground mb-4">{filtered.length} products found</p>
-
-        {filtered.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-lg text-muted-foreground">No products found. Try a different search or category.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {filtered.map(p => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        )}
       </div>
     </Layout>
   );
