@@ -43,11 +43,51 @@ export default function Checkout() {
   const tax = totalPrice * 0.08;
   const grandTotal = totalPrice + deliveryFee + serviceFee + tax + actualTip;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast("Order placed successfully! 🎉");
-    clearCart();
-    navigate("/");
+
+    try {
+      // Mocking the backend order creation as per current setup
+      // We assume the user is logged in or we have their details
+      const userStr = localStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : null;
+
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer \${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify({
+          customerName: "John Doe", // Should come from form state
+          phone: "0000000000",
+          address: "123 Main St",
+          products: cart.map(item => ({
+            product: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            variant: item.unit,
+            imageURL: item.image
+          })),
+          subtotal: totalPrice,
+          deliveryFee,
+          totalPrice: grandTotal,
+          orderType: fulfillment === "delivery" ? "Delivery" : "Pickup",
+          paymentMethod
+        })
+      });
+
+      const orderData = await res.json();
+
+      if (!res.ok) throw new Error(orderData.message || "Checkout failed");
+
+      toast.success("Order placed successfully! 🎉");
+      clearCart();
+      navigate(\`/track/\${orderData._id}\`);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   if (cart.length === 0) {

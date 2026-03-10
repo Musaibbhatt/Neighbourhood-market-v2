@@ -3,7 +3,7 @@ import Layout from '@/components/Layout';
 import { useCart } from '@/contexts/CartContext';
 import { formatCurrency } from '@/lib/data';
 import { Button } from '@/components/ui/button';
-import { ShoppingBag, RefreshCw, ChevronRight, Clock, MapPin, CreditCard } from 'lucide-react';
+import { ShoppingBag, RefreshCw, ChevronRight, Clock, MapPin, CreditCard, Map } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -92,14 +92,21 @@ const Orders = () => {
                     }`}>
                       {order.orderStatus}
                     </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-full gap-2"
-                      onClick={() => handleReorder(order)}
-                    >
-                      <RefreshCw className="h-3 w-3" /> Reorder
-                    </Button>
+                    <div className="flex gap-2">
+                      <Link to={`/track/${order._id}`}>
+                        <Button variant="outline" size="sm" className="rounded-full gap-2">
+                          <Map className="h-3 w-3" /> Track
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full gap-2"
+                        onClick={() => handleReorder(order)}
+                      >
+                        <RefreshCw className="h-3 w-3" /> Reorder
+                      </Button>
+                    </div>
                   </div>
                 </div>
                 <div className="p-6">

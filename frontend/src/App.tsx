@@ -15,6 +15,7 @@ import Contact from "./pages/Contact";
 import Offers from "./pages/Offers";
 import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
+import TrackOrder from "./pages/TrackOrder";
 import Addresses from "./pages/Addresses";
 import Payments from "./pages/Payments";
 import NotFound from "./pages/NotFound";
@@ -53,6 +54,7 @@ const App = () => (
             {/* User Routes */}
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+            <Route path="/track/:orderId" element={<TrackOrder />} />
             <Route path="/profile/addresses" element={<ProtectedRoute><Addresses /></ProtectedRoute>} />
             <Route path="/profile/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
 
