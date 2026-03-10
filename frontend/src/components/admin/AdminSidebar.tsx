@@ -18,7 +18,8 @@ const AdminSidebar = () => {
     { icon: Package, label: 'Products', path: '/admin/products' },
     { icon: ShoppingCart, label: 'Orders', path: '/admin/orders' },
     { icon: Tags, label: 'Categories', path: '/admin/categories' },
-    { icon: Ticket, label: 'Coupons', path: '/admin/coupons' },
+    { icon: Ticket, label: 'Promotions', path: '/admin/promotions' },
+    { icon: Settings, label: 'Settings', path: '/admin/settings' },
   ];
 
   const handleLogout = () => {

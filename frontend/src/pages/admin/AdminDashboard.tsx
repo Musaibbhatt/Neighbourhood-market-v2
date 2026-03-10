@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Users, ShoppingCart, DollarSign, Package } from 'lucide-react';
+import { Users, ShoppingCart, DollarSign, Package, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const AdminDashboard = () => {
@@ -23,11 +23,11 @@ const AdminDashboard = () => {
     { title: 'Total Users', value: stats?.totalUsers, icon: Users, color: 'text-blue-600' },
     { title: 'Total Orders', value: stats?.totalOrders, icon: ShoppingCart, color: 'text-green-600' },
     { title: 'Total Revenue', value: `$${stats?.totalRevenue?.toFixed(2)}`, icon: DollarSign, color: 'text-amber-600' },
-    { title: 'Recent Orders', value: stats?.recentOrders?.length, icon: Package, color: 'text-purple-600' },
+    { title: 'Active Products', value: stats?.totalProducts || 0, icon: Package, color: 'text-purple-600' },
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <h1 className="text-3xl font-bold text-slate-900">Dashboard Overview</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -42,6 +42,40 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* Best Sellers */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <TrendingUp size={20} className="text-green-500" />
+            Best Sellers
+          </h2>
+          <div className="space-y-4">
+            {stats?.bestSellers?.map((item: any, idx: number) => (
+              <div key={idx} className="flex items-center justify-between">
+                <span className="text-sm font-medium">{item.name}</span>
+                <span className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full font-bold">{item.totalSold} sold</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Low Stock Alerts */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <AlertTriangle size={20} className="text-amber-500" />
+            Low Stock Alerts
+          </h2>
+          <div className="space-y-4">
+            {stats?.lowStock?.map((item: any, idx: number) => (
+              <div key={idx} className="flex items-center justify-between">
+                <span className="text-sm font-medium">{item.name}</span>
+                <span className="text-xs bg-destructive/10 text-destructive px-2 py-1 rounded-full font-bold">{item.stock} left</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">

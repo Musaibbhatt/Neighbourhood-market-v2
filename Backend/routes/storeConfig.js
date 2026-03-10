@@ -29,13 +29,21 @@ router.put('/', authMiddleware, roleMiddleware('SuperAdmin'), async (req, res) =
         let config = await StoreConfig.findOne();
         if (!config) config = new StoreConfig();
 
-        const { orderingEnabled, storeMessage, deliveryEnabled, freeDeliveryThreshold, defaultDeliveryFee } = req.body;
+        const {
+            orderingEnabled, storeMessage, deliveryEnabled,
+            freeDeliveryThreshold, defaultDeliveryFee, handlingCharge,
+            taxRate, deliveryZones, openHours
+        } = req.body;
 
         if (orderingEnabled !== undefined) config.orderingEnabled = orderingEnabled;
         if (storeMessage !== undefined) config.storeMessage = storeMessage;
         if (deliveryEnabled !== undefined) config.deliveryEnabled = deliveryEnabled;
         if (freeDeliveryThreshold !== undefined) config.freeDeliveryThreshold = freeDeliveryThreshold;
         if (defaultDeliveryFee !== undefined) config.defaultDeliveryFee = defaultDeliveryFee;
+        if (handlingCharge !== undefined) config.handlingCharge = handlingCharge;
+        if (taxRate !== undefined) config.taxRate = taxRate;
+        if (deliveryZones !== undefined) config.deliveryZones = deliveryZones;
+        if (openHours !== undefined) config.openHours = openHours;
 
         await config.save();
         res.json(config);

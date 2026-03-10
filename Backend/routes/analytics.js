@@ -16,11 +16,28 @@ router.get('/', authMiddleware, roleMiddleware('admin', 'SuperAdmin', 'Manager')
         const orders = await Order.find({ orderStatus: { $ne: 'Cancelled' } });
         const revenue = orders.reduce((acc, order) => acc + (order.totalPrice || 0), 0);
 
+        // Best selling products (based on total quantity sold)
+        const bestSellers = await Order.aggregate([
+            { $match: { orderStatus: { $ne: 'Cancelled' } } },
+            { $unwind: '$products' },
+            { $group: { _id: '$products.product', name: { $first: '$products.name' }, totalSold: { $sum: '$products.quantity' } } },
+            { $sort: { totalSold: -1 } },
+            { $limit: 5 }
+        ]);
+
+        // Low stock alerts
+        const Product = require('../models/Product');
+        const lowStock = await Product.find({ stock: { $lte: 10 } }).limit(5);
+        const totalProducts = await Product.countDocuments();
+
         res.json({
             totalUsers,
             totalOrders,
             totalRevenue: revenue,
-            recentOrders: await Order.find().sort({ createdAt: -1 }).limit(5)
+            totalProducts,
+            recentOrders: await Order.find().sort({ createdAt: -1 }).limit(5),
+            bestSellers,
+            lowStock
         });
     } catch (err) {
         console.error(err);
