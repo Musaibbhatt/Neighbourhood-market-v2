@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Instagram, Facebook, Twitter, Mail } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -14,9 +15,19 @@ export default function Footer() {
               </svg>
               Neighbourhood
             </Link>
-            <p className="text-primary-foreground/70 text-sm max-w-xs">
+            <p className="text-primary-foreground/70 text-sm max-w-xs mb-6">
               Your local community store dedicated to fresh food and friendly service.
             </p>
+            <div className="flex items-center gap-4">
+              <a
+                href="https://instagram.com/Neighborhood_market__"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-10 w-10 rounded-full bg-primary-foreground/10 flex items-center justify-center hover:bg-primary-foreground/20 transition-colors"
+              >
+                <Instagram size={20} />
+              </a>
+            </div>
           </div>
 
           {/* Quick Links */}
