@@ -15,10 +15,26 @@ export default function Checkout() {
   const navigate = useNavigate();
 
   const [fulfillment, setFulfillment] = useState("delivery");
-  const [zipCode, setZipCode] = useState("");
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    zipCode: ""
+  });
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [tipAmount, setTipAmount] = useState<number | null>(null);
   const [customTip, setCustomTip] = useState("");
+
+  // Reset tip when switching to pickup
+  useEffect(() => {
+    if (fulfillment === "pickup") {
+      setTipAmount(null);
+      setCustomTip("");
+    }
+  }, [fulfillment]);
 
   const actualTip = useMemo(() => {
     if (fulfillment === "pickup") return 0;
@@ -33,35 +49,35 @@ export default function Checkout() {
 
     // Simple logic for location-based fee variation
     let baseFee = 4.99;
-    if (zipCode.startsWith("9")) baseFee += 2.00; // Farther zone
-    if (zipCode.startsWith("1")) baseFee -= 1.00; // Nearer zone
+    if (formData.zipCode.startsWith("9")) baseFee += 2.00; // Farther zone
+    if (formData.zipCode.startsWith("1")) baseFee -= 1.00; // Nearer zone
 
     return Math.max(0, baseFee);
-  }, [fulfillment, totalPrice, zipCode]);
+  }, [fulfillment, totalPrice, formData.zipCode]);
 
   const serviceFee = totalPrice * 0.05;
   const tax = totalPrice * 0.08;
   const grandTotal = totalPrice + deliveryFee + serviceFee + tax + actualTip;
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      // Mocking the backend order creation as per current setup
-      // We assume the user is logged in or we have their details
-      const userStr = localStorage.getItem("user");
-      const user = userStr ? JSON.parse(userStr) : null;
-
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer \${localStorage.getItem("token")}`
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
         },
         body: JSON.stringify({
-          customerName: "John Doe", // Should come from form state
-          phone: "0000000000",
-          address: "123 Main St",
+          customerName: `${formData.firstName} ${formData.lastName}`,
+          phone: formData.phone,
+          address: fulfillment === "delivery" ? `${formData.address}, ${formData.city}, ${formData.zipCode}` : "Store Pickup",
           products: cart.map(item => ({
             product: item.id,
             name: item.name,
@@ -74,7 +90,10 @@ export default function Checkout() {
           deliveryFee,
           totalPrice: grandTotal,
           orderType: fulfillment === "delivery" ? "Delivery" : "Pickup",
-          paymentMethod
+          paymentMethod: paymentMethod === 'card' ? 'Card' : paymentMethod === 'applepay' ? 'Apple Pay' : 'Cash',
+          tip: actualTip,
+          tax: tax,
+          handlingFee: serviceFee
         })
       });
 
@@ -108,7 +127,7 @@ export default function Checkout() {
                 <div>
                   <RadioGroupItem value="delivery" id="delivery" className="peer sr-only" />
                   <Label
-                    for="delivery"
+                    htmlFor="delivery"
                     className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                   >
                     <Truck className="mb-3 h-6 w-6" />
@@ -118,7 +137,7 @@ export default function Checkout() {
                 <div>
                   <RadioGroupItem value="pickup" id="pickup" className="peer sr-only" />
                   <Label
-                    for="pickup"
+                    htmlFor="pickup"
                     className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                   >
                     <Store className="mb-3 h-6 w-6" />
@@ -133,26 +152,27 @@ export default function Checkout() {
                 {fulfillment === "delivery" ? "Delivery Details" : "Contact Information"}
               </h2>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>First Name</Label><Input required placeholder="John" /></div>
-                <div><Label>Last Name</Label><Input required placeholder="Doe" /></div>
+                <div><Label htmlFor="firstName">First Name</Label><Input id="firstName" required placeholder="John" value={formData.firstName} onChange={handleInputChange} /></div>
+                <div><Label htmlFor="lastName">Last Name</Label><Input id="lastName" required placeholder="Doe" value={formData.lastName} onChange={handleInputChange} /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><Label>Email</Label><Input type="email" required placeholder="john@example.com" /></div>
-                <div><Label>Phone</Label><Input type="tel" required placeholder="+1 234 567 890" /></div>
+                <div><Label htmlFor="email">Email</Label><Input id="email" type="email" required placeholder="john@example.com" value={formData.email} onChange={handleInputChange} /></div>
+                <div><Label htmlFor="phone">Phone</Label><Input id="phone" type="tel" required placeholder="+1 234 567 890" value={formData.phone} onChange={handleInputChange} /></div>
               </div>
 
               {fulfillment === "delivery" && (
                 <>
-                  <div><Label>Street Address</Label><Input required placeholder="123 Main Street" /></div>
+                  <div><Label htmlFor="address">Street Address</Label><Input id="address" required placeholder="123 Main Street" value={formData.address} onChange={handleInputChange} /></div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div><Label>City</Label><Input required placeholder="New York" /></div>
+                    <div><Label htmlFor="city">City</Label><Input id="city" required placeholder="New York" value={formData.city} onChange={handleInputChange} /></div>
                     <div>
-                      <Label>ZIP Code</Label>
+                      <Label htmlFor="zipCode">ZIP Code</Label>
                       <Input
+                        id="zipCode"
                         required
                         placeholder="10001"
-                        value={zipCode}
-                        onChange={(e) => setZipCode(e.target.value)}
+                        value={formData.zipCode}
+                        onChange={handleInputChange}
                       />
                     </div>
                   </div>

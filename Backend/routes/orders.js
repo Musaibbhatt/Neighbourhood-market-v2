@@ -14,7 +14,7 @@ router.post('/', async (req, res) => {
         const {
             customerName, phone, address, products, totalPrice,
             orderType, subtotal, deliveryFee, tip, paymentMethod, userId,
-            discountAmount, couponCode, notes // Added notes
+            discountAmount, couponCode, notes, tax, handlingFee
         } = req.body;
 
         if (!products || products.length === 0) {
@@ -44,6 +44,8 @@ router.post('/', async (req, res) => {
             products,
             subtotal,
             deliveryFee: deliveryFee || 0,
+            handlingFee: handlingFee || 0,
+            tax: tax || 0,
             tipAmount: tip || 0,
             totalPrice,
             discountAmount: discountAmount || 0,
