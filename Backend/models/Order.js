@@ -92,9 +92,11 @@ const orderSchema = new mongoose.Schema({
     returnRequest: {
         requestType: { type: String, enum: ['Refund', 'Replacement'] },
         reason: String,
+        details: String,
+        items: [String], // Array of item names or IDs
         status: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Completed'], default: 'Pending' },
         adminNotes: String,
-        createdAt: { type: Date }
+        createdAt: { type: Date, default: Date.now }
     }
 }, { timestamps: true });
 

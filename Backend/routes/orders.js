@@ -196,7 +196,7 @@ router.put('/:id', authMiddleware, roleMiddleware('SuperAdmin', 'Manager', 'Staf
 // @desc    Submit a refund or replacement request
 router.post('/:id/return-request', async (req, res) => {
     try {
-        const { requestType, reason } = req.body;
+        const { requestType, reason, details, items } = req.body;
         const order = await Order.findById(req.params.id);
 
         if (!order) return res.status(404).json({ message: 'Order not found' });
@@ -207,6 +207,8 @@ router.post('/:id/return-request', async (req, res) => {
         order.returnRequest = {
             requestType,
             reason,
+            details,
+            items,
             status: 'Pending',
             createdAt: new Date()
         };

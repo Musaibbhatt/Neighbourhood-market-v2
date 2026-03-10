@@ -11,9 +11,14 @@ import {
   ChevronLeft,
   AlertCircle,
   XCircle,
-  Clock
+  Clock,
+  RefreshCw,
+  RotateCcw,
+  ShieldAlert
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 
 const steps = [
   { status: 'Order Received', icon: CheckCircle2, label: 'Order Received' },
@@ -67,6 +72,42 @@ const TrackOrder = () => {
   if (isLoading) return <Layout><div className="container py-20 text-center">Loading tracker...</div></Layout>;
   if (!order) return <Layout><div className="container py-20 text-center text-destructive">Order not found</div></Layout>;
 
+  const [showReturnForm, setShowReturnForm] = useState(false);
+  const [returnType, setReturnType] = useState<'Refund' | 'Replacement'>('Refund');
+  const [returnReason, setReturnReason] = useState("");
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
+
+  const handleReturnSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedItems.length === 0) {
+      toast.error("Please select at least one item");
+      return;
+    }
+
+    setIsSubmittingReturn(true);
+    try {
+      const res = await fetch(`/api/orders/${orderId}/return-request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestType: returnType,
+          reason: returnReason,
+          items: selectedItems
+        })
+      });
+      if (!res.ok) throw new Error("Failed to submit request");
+      const updatedOrder = await res.json();
+      setOrder(updatedOrder);
+      setShowReturnForm(false);
+      toast.success(`${returnType} request submitted!`);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsSubmittingReturn(false);
+    }
+  };
+
   const currentStepIndex = steps.findIndex(s => s.status === order.orderStatus);
   const isCancelled = order.orderStatus === 'Cancelled';
 
@@ -85,12 +126,114 @@ const TrackOrder = () => {
               <h1 className="text-2xl font-bold">Track Order #{order._id.slice(-6)}</h1>
               <p className="text-sm text-muted-foreground">Placed on {new Date(order.createdAt).toLocaleString()}</p>
             </div>
-            {order.orderStatus === 'Order Received' && !isCancelled && (
-              <Button variant="destructive" size="sm" className="rounded-full" onClick={handleCancel}>
-                Cancel Order
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {order.orderStatus === 'Order Received' && !isCancelled && (
+                <Button variant="destructive" size="sm" className="rounded-full" onClick={handleCancel}>
+                  Cancel Order
+                </Button>
+              )}
+              {order.orderStatus === 'Delivered' && !order.returnRequest && (
+                <Button variant="outline" size="sm" className="rounded-full gap-2" onClick={() => setShowReturnForm(true)}>
+                  <ShieldAlert className="h-4 w-4" /> Issue with order?
+                </Button>
+              )}
+            </div>
           </div>
+
+          {showReturnForm && (
+            <div className="bg-muted/30 border rounded-2xl p-6 mb-8">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <RotateCcw className="h-5 w-5 text-primary" />
+                Request Refund or Replacement
+              </h3>
+              <form onSubmit={handleReturnSubmit} className="space-y-6">
+                <div>
+                  <Label className="mb-2 block">What do you need?</Label>
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant={returnType === 'Refund' ? 'default' : 'outline'}
+                      className="rounded-full flex-1"
+                      onClick={() => setReturnType('Refund')}
+                    >
+                      Full Refund
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={returnType === 'Replacement' ? 'default' : 'outline'}
+                      className="rounded-full flex-1"
+                      onClick={() => setReturnType('Replacement')}
+                    >
+                      Replacement
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="mb-3 block">Select affected items</Label>
+                  <div className="space-y-3">
+                    {order.products.map((p: any, idx: number) => (
+                      <div key={idx} className="flex items-center space-x-3">
+                        <Checkbox
+                          id={`item-${idx}`}
+                          checked={selectedItems.includes(p.name)}
+                          onCheckedChange={(checked) => {
+                            if (checked) setSelectedItems([...selectedItems, p.name]);
+                            else setSelectedItems(selectedItems.filter(i => i !== p.name));
+                          }}
+                        />
+                        <label htmlFor={`item-${idx}`} className="text-sm font-medium leading-none cursor-pointer">
+                          {p.name} (x{p.quantity})
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="returnReason">Reason (Missing/Damaged)</Label>
+                  <Textarea
+                    id="returnReason"
+                    placeholder="Describe the issue in detail..."
+                    className="mt-1"
+                    value={returnReason}
+                    onChange={(e) => setReturnReason(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <Button type="submit" className="rounded-full flex-1" disabled={isSubmittingReturn}>
+                    {isSubmittingReturn ? "Submitting..." : "Submit Request"}
+                  </Button>
+                  <Button type="button" variant="ghost" className="rounded-full" onClick={() => setShowReturnForm(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {order.returnRequest && (
+            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 mb-8">
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="font-bold text-primary flex items-center gap-2">
+                  <RefreshCw className="h-5 w-5" />
+                  {order.returnRequest.requestType} Request
+                </h3>
+                <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest">
+                  {order.returnRequest.status}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-2"><strong>Reason:</strong> {order.returnRequest.reason}</p>
+              <p className="text-sm text-muted-foreground"><strong>Items:</strong> {order.returnRequest.items.join(", ")}</p>
+              {order.returnRequest.adminNotes && (
+                <div className="mt-4 p-3 bg-white border rounded-lg text-xs">
+                  <strong>Support Note:</strong> {order.returnRequest.adminNotes}
+                </div>
+              )}
+            </div>
+          )}
 
           {isCancelled ? (
             <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-6 flex items-center gap-4 text-destructive mb-8">
