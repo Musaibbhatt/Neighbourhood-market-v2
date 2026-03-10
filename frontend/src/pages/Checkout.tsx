@@ -8,7 +8,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Truck, Store, MapPin, ShieldCheck } from "lucide-react";
+import { Truck, Store, MapPin, ShieldCheck, CreditCard, Banknote, Smartphone, Heart } from "lucide-react";
 
 export default function Checkout() {
   const { cart, totalPrice, clearCart } = useCart();
@@ -16,6 +16,16 @@ export default function Checkout() {
 
   const [fulfillment, setFulfillment] = useState("delivery");
   const [zipCode, setZipCode] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("card");
+  const [tipAmount, setTipAmount] = useState<number | null>(null);
+  const [customTip, setCustomTip] = useState("");
+
+  const actualTip = useMemo(() => {
+    if (fulfillment === "pickup") return 0;
+    if (tipAmount !== null) return tipAmount;
+    const customValue = parseFloat(customTip);
+    return isNaN(customValue) ? 0 : customValue;
+  }, [fulfillment, tipAmount, customTip]);
 
   const deliveryFee = useMemo(() => {
     if (fulfillment === "pickup") return 0;
@@ -31,7 +41,7 @@ export default function Checkout() {
 
   const serviceFee = totalPrice * 0.05;
   const tax = totalPrice * 0.08;
-  const grandTotal = totalPrice + deliveryFee + serviceFee + tax;
+  const grandTotal = totalPrice + deliveryFee + serviceFee + tax + actualTip;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,9 +131,77 @@ export default function Checkout() {
               )}
             </div>
 
+            <div className="bg-card border rounded-xl p-6 space-y-6">
+              <h2 className="font-display text-lg font-semibold">Payment Method</h2>
+              <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-3">
+                <div className="flex items-center space-x-3 rounded-lg border p-4 cursor-pointer hover:bg-accent transition-colors">
+                  <RadioGroupItem value="card" id="card" />
+                  <Label htmlFor="card" className="flex flex-1 items-center justify-between cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <CreditCard className="h-5 w-5 text-muted-foreground" />
+                      <span>Credit / Debit Card</span>
+                    </div>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-3 rounded-lg border p-4 cursor-pointer hover:bg-accent transition-colors">
+                  <RadioGroupItem value="applepay" id="applepay" />
+                  <Label htmlFor="applepay" className="flex flex-1 items-center justify-between cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <Smartphone className="h-5 w-5 text-muted-foreground" />
+                      <span>Apple Pay</span>
+                    </div>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-3 rounded-lg border p-4 cursor-pointer hover:bg-accent transition-colors">
+                  <RadioGroupItem value="cash" id="cash" />
+                  <Label htmlFor="cash" className="flex flex-1 items-center justify-between cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <Banknote className="h-5 w-5 text-muted-foreground" />
+                      <span>{fulfillment === "delivery" ? "Cash on Delivery" : "Pay at Store"}</span>
+                    </div>
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {fulfillment === "delivery" && (
+              <div className="bg-card border rounded-xl p-6 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-primary fill-primary" />
+                  <h2 className="font-display text-lg font-semibold">Add a Tip</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">100% of the tip goes to your delivery partner.</p>
+                <div className="flex flex-wrap gap-2">
+                  {[1, 3, 10].map((val) => (
+                    <Button
+                      key={val}
+                      type="button"
+                      variant={tipAmount === val ? "default" : "outline"}
+                      className="rounded-full flex-1"
+                      onClick={() => {
+                        setTipAmount(val);
+                        setCustomTip("");
+                      }}
+                    >
+                      \${val}
+                    </Button>
+                  ))}
+                  <div className="flex-1 min-w-[120px]">
+                    <Input
+                      placeholder="Custom tip"
+                      className="rounded-full"
+                      value={customTip}
+                      onChange={(e) => {
+                        setTipAmount(null);
+                        setCustomTip(e.target.value);
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="bg-card border rounded-xl p-6">
-              <h2 className="font-display text-lg font-semibold mb-4">Payment Method</h2>
-              <p className="text-sm text-muted-foreground mb-4">Current implementation only supports Cash on Delivery/Pickup.</p>
               <Button type="submit" className="w-full rounded-full py-6 text-lg font-bold" size="lg">
                 Confirm Order • {formatCurrency(grandTotal)}
               </Button>
@@ -153,6 +231,12 @@ export default function Checkout() {
                 </div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Service & Handling (5%)</span><span>{formatCurrency(serviceFee)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Taxes (8%)</span><span>{formatCurrency(tax)}</span></div>
+                {actualTip > 0 && (
+                  <div className="flex justify-between text-primary font-medium">
+                    <span>Driver Tip</span>
+                    <span>{formatCurrency(actualTip)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2 text-primary">
                   <span>Total</span><span>{formatCurrency(grandTotal)}</span>
                 </div>
