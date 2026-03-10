@@ -4,7 +4,7 @@ import ProductCard from "@/components/ProductCard";
 import { products, formatCurrency } from "@/lib/data";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
-import { Star, ShoppingCart, Minus, Plus, MessageSquare, Camera, Check } from "lucide-react";
+import { Star, ShoppingCart, Minus, Plus, MessageSquare, Camera, Check, Bell } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -110,6 +110,24 @@ export default function ProductDetail() {
     toast.success("Added to cart!");
   };
 
+  const handleNotify = async () => {
+    if (!localStorage.getItem('token')) {
+      toast.error("Please login to set notifications");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/products/${id}/stock-notify`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      toast.success(data.message);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
   return (
     <Layout>
       <div className="container py-8">
@@ -156,7 +174,7 @@ export default function ProductDetail() {
             <p className="text-muted-foreground mb-8 leading-relaxed">{product.description}</p>
 
             {/* Quantity & Add to Cart */}
-            {product.stock > 0 && (
+            {product.stock > 0 ? (
               <div className="flex items-center gap-4">
                 <div className="flex items-center border rounded-full">
                   <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setQuantity(q => Math.max(1, q - 1))}>
@@ -171,6 +189,10 @@ export default function ProductDetail() {
                   <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
                 </Button>
               </div>
+            ) : (
+              <Button variant="outline" className="rounded-full gap-2" onClick={handleNotify}>
+                <Bell size={18} /> Notify when available
+              </Button>
             )}
           </div>
         </div>

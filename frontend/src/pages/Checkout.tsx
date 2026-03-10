@@ -8,7 +8,8 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Truck, Store, MapPin, ShieldCheck, CreditCard, Banknote, Smartphone, Heart } from "lucide-react";
+import { Truck, Store, MapPin, ShieldCheck, CreditCard, Banknote, Smartphone, Heart, Sparkles, X } from "lucide-react";
+import ProductCard from "@/components/ProductCard";
 
 export default function Checkout() {
   const { cart, totalPrice, clearCart } = useCart();
@@ -28,6 +29,10 @@ export default function Checkout() {
   const [tipAmount, setTipAmount] = useState<number | null>(null);
   const [customTip, setCustomTip] = useState("");
 
+  // Impulse buy state
+  const [showImpulse, setShowImpulse] = useState(false);
+  const [impulseItems, setImpulseItems] = useState<any[]>([]);
+
   // Reset tip when switching to pickup
   useEffect(() => {
     if (fulfillment === "pickup") {
@@ -35,6 +40,20 @@ export default function Checkout() {
       setCustomTip("");
     }
   }, [fulfillment]);
+
+  useEffect(() => {
+    const fetchImpulseItems = async () => {
+      try {
+        // Fetch common impulse buy items (snacks, drinks, etc)
+        const res = await fetch("/api/products?limit=4&isOrganic=false"); // Simple proxy for impulse items
+        const data = await res.json();
+        setImpulseItems(data.products || []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchImpulseItems();
+  }, []);
 
   const actualTip = useMemo(() => {
     if (fulfillment === "pickup") return 0;
@@ -64,9 +83,12 @@ export default function Checkout() {
     setFormData(prev => ({ ...prev, [id]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setShowImpulse(true);
+  };
 
+  const handleFinalOrder = async () => {
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -263,7 +285,7 @@ export default function Checkout() {
 
             <div className="bg-card border rounded-xl p-6">
               <Button type="submit" className="w-full rounded-full py-6 text-lg font-bold" size="lg">
-                Confirm Order • {formatCurrency(grandTotal)}
+                Proceed to Final Step • {formatCurrency(grandTotal)}
               </Button>
               <p className="text-center text-xs text-muted-foreground mt-4 flex items-center justify-center gap-1">
                 <ShieldCheck className="h-3 w-3" /> All transactions are secure and encrypted.
@@ -305,6 +327,64 @@ export default function Checkout() {
           </div>
         </form>
       </div>
+
+      {/* Impulse Buy Modal */}
+      {showImpulse && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-card border rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col scale-in-center">
+            <div className="p-6 border-b flex justify-between items-center bg-primary/5">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Sparkles className="text-primary h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Forgot something?</h2>
+                  <p className="text-sm text-muted-foreground">Most people also grab these favorites!</p>
+                </div>
+              </div>
+              <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setShowImpulse(false)}>
+                <X size={20} />
+              </Button>
+            </div>
+
+            <div className="p-8 overflow-y-auto">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {impulseItems.map((p) => (
+                  <ProductCard key={p._id} product={{
+                    id: p._id,
+                    name: p.name,
+                    brand: p.brand,
+                    category: p.category.name,
+                    basePrice: p.basePrice,
+                    salePrice: p.salePrice,
+                    image: p.imageURL || "/placeholder.svg",
+                    stock: p.stock,
+                    averageRating: p.averageRating,
+                    reviewCount: p.numReviews,
+                    description: p.description,
+                    unit: p.unit || "unit"
+                  }} />
+                ))}
+              </div>
+            </div>
+
+            <div className="p-6 border-t bg-muted/30 flex flex-col sm:flex-row gap-4 items-center justify-between">
+              <div className="text-center sm:text-left">
+                <p className="text-xs text-muted-foreground uppercase font-bold tracking-widest mb-1">Final Total</p>
+                <p className="text-2xl font-black text-primary">{formatCurrency(grandTotal)}</p>
+              </div>
+              <div className="flex gap-3 w-full sm:w-auto">
+                <Button variant="outline" className="rounded-full flex-1 sm:flex-initial" onClick={() => setShowImpulse(false)}>
+                  Go Back
+                </Button>
+                <Button className="rounded-full flex-1 sm:flex-initial px-8 py-6 text-lg font-bold" onClick={handleFinalOrder}>
+                  Confirm Order & Pay
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

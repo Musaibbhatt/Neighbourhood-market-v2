@@ -1,7 +1,8 @@
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Heart, Star, Plus, Minus } from "lucide-react";
+import { ShoppingCart, Heart, Star, Plus, Minus, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import type { Product } from "@/lib/data";
 import { formatCurrency } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +41,26 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation();
     if (newQuantity > product.stock) return;
     updateQuantity(product.id, newQuantity);
+  };
+
+  const handleNotify = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!localStorage.getItem('token')) {
+      toast.error("Please login to set notifications");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/products/${product.id}/stock-notify`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      toast.success(data.message);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   const getStockStatus = () => {
@@ -97,11 +118,19 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           {/* Quick Add / Quantity Selector */}
           <div className="mt-4">
-            {quantity === 0 ? (
+            {isOutOfStock ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNotify}
+                className="w-full rounded-full gap-2 text-xs"
+              >
+                <Bell className="h-3 w-3" /> Notify Me
+              </Button>
+            ) : quantity === 0 ? (
               <Button
                 size="sm"
                 onClick={handleAddToCart}
-                disabled={isOutOfStock}
                 className="w-full rounded-full gap-2 font-bold"
               >
                 <Plus className="h-4 w-4" /> Add
