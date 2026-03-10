@@ -13,6 +13,10 @@ import Login from "./pages/Login";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Offers from "./pages/Offers";
+import Profile from "./pages/Profile";
+import Orders from "./pages/Orders";
+import Addresses from "./pages/Addresses";
+import Payments from "./pages/Payments";
 import NotFound from "./pages/NotFound";
 
 // Admin Pages
@@ -45,6 +49,12 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/offers" element={<Offers />} />
+
+            {/* User Routes */}
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+            <Route path="/profile/addresses" element={<ProtectedRoute><Addresses /></ProtectedRoute>} />
+            <Route path="/profile/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
 
             {/* Admin Routes */}
             <Route

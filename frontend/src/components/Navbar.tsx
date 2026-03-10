@@ -69,7 +69,7 @@ export default function Navbar() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          <Link to="/login">
+          <Link to={localStorage.getItem('token') ? "/profile" : "/login"}>
             <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
               <User className="h-5 w-5" />
             </Button>
