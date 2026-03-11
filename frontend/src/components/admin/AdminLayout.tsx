@@ -4,11 +4,16 @@ import AdminSidebar from "./AdminSidebar";
 
 export default function AdminLayout() {
   return (
-    <div className="flex">
+    <div className="flex min-h-screen bg-muted/30">
+
       <AdminSidebar />
-      <div className="flex-1 min-h-screen bg-slate-100 p-6">
-        <Outlet />
-      </div>
+
+      <main className="flex-1 p-8 overflow-y-auto">
+        <div className="max-w-7xl mx-auto">
+          <Outlet />
+        </div>
+      </main>
+
     </div>
   );
 }
