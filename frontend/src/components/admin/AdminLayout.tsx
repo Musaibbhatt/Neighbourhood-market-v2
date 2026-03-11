@@ -1,18 +1,14 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
-import AdminSidebar from './AdminSidebar';
+import React from "react";
+import { Outlet } from "react-router-dom";
+import AdminSidebar from "./AdminSidebar";
 
-const AdminLayout = () => {
+export default function AdminLayout() {
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex">
       <AdminSidebar />
-      <main className="flex-1 p-8 overflow-y-auto">
-        <div className="max-w-7xl mx-auto">
-          <Outlet />
-        </div>
-      </main>
+      <div className="flex-1 min-h-screen bg-slate-100 p-6">
+        <Outlet />
+      </div>
     </div>
   );
-};
-
-export default AdminLayout;
+}
