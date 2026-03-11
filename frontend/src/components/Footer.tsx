@@ -1,7 +1,18 @@
 import { Link } from "react-router-dom";
 import { Instagram, Facebook, Twitter, Mail } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Footer() {
+  const { data: config } = useQuery({
+    queryKey: ['store-config'],
+    queryFn: async () => {
+      const res = await fetch('/api/store-config');
+      return res.json();
+    }
+  });
+
+  const instagramUsername = config?.instagramUsername || 'Neighborhood_market__';
+
   return (
     <footer className="bg-primary text-primary-foreground mt-auto">
       <div className="container py-12">
@@ -20,13 +31,14 @@ export default function Footer() {
             </p>
             <div className="flex items-center gap-4">
               <a
-                href="https://instagram.com/Neighborhood_market__"
+                href={`https://instagram.com/${instagramUsername}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="h-10 w-10 rounded-full bg-primary-foreground/10 flex items-center justify-center hover:bg-primary-foreground/20 transition-colors"
+                className="h-10 w-10 rounded-full bg-primary-foreground/10 flex items-center justify-center hover:bg-primary-foreground/20 transition-colors group"
               >
                 <Instagram size={20} />
               </a>
+              <span className="text-xs text-primary-foreground/50">@{instagramUsername}</span>
             </div>
           </div>
 

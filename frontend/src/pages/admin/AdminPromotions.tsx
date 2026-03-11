@@ -24,6 +24,7 @@ import {
 const AdminPromotions = () => {
   const queryClient = useQueryClient();
   const [isCouponDialogOpen, setIsCouponDialogOpen] = useState(false);
+  const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false);
 
   const { data: coupons, isLoading: couponsLoading } = useQuery({
     queryKey: ['admin-coupons'],
@@ -79,10 +80,62 @@ const AdminPromotions = () => {
     });
   };
 
-  if (couponsLoading) return <div>Loading promotions...</div>;
+  const { data: offers, isLoading: offersLoading } = useQuery({
+    queryKey: ['admin-offers'],
+    queryFn: async () => {
+      const res = await fetch('/api/offers');
+      return res.json();
+    }
+  });
+
+  const createOfferMutation = useMutation({
+    mutationFn: async (newOffer: any) => {
+      const res = await fetch('/api/offers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(newOffer)
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-offers'] });
+      setIsOfferDialogOpen(false);
+      toast.success('Flash sale created');
+    }
+  });
+
+  const deleteOfferMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await fetch(`/api/offers/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-offers'] });
+      toast.success('Offer removed');
+    }
+  });
+
+  const handleOfferSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const data = Object.fromEntries(formData.entries());
+    createOfferMutation.mutate({
+      ...data,
+      discountPercentage: parseFloat(data.discountPercentage as string),
+      startDate: new Date(data.startDate as string),
+      endDate: new Date(data.endDate as string)
+    });
+  };
+
+  if (couponsLoading || offersLoading) return <div>Loading promotions...</div>;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Promotions & Coupons</h1>
         <Dialog open={isCouponDialogOpen} onOpenChange={setIsCouponDialogOpen}>
@@ -131,7 +184,7 @@ const AdminPromotions = () => {
         </Dialog>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         {coupons?.map((coupon: any) => (
           <div key={coupon._id} className="bg-card border rounded-2xl p-6 relative group overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -165,6 +218,85 @@ const AdminPromotions = () => {
                </span>
                <Zap size={14} className="text-primary/20" />
             </div>
+          </div>
+        ))}
+      </div>
+
+      <Separator />
+
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Flash Sales & Offers</h1>
+        <Dialog open={isOfferDialogOpen} onOpenChange={setIsOfferDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="rounded-full gap-2 bg-amber-600 hover:bg-amber-700">
+              <Zap size={18} /> New Flash Sale
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create Flash Sale</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleOfferSubmit} className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="title">Offer Title</Label>
+                <Input id="title" name="title" placeholder="e.g. Summer Blowout" required />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Input id="description" name="description" required />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="discountPercentage">Discount (%)</Label>
+                  <Input id="discountPercentage" name="discountPercentage" type="number" required />
+                </div>
+                <div>
+                  <Label htmlFor="category">Category (Optional)</Label>
+                  <Input id="category" name="category" placeholder="Category ID" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="startDate">Start Date</Label>
+                  <Input id="startDate" name="startDate" type="date" required />
+                </div>
+                <div>
+                  <Label htmlFor="endDate">End Date</Label>
+                  <Input id="endDate" name="endDate" type="date" required />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit" className="w-full rounded-full bg-amber-600 hover:bg-amber-700">Launch Offer</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {offers?.map((offer: any) => (
+          <div key={offer._id} className="bg-amber-50 border border-amber-200 rounded-2xl p-6 relative group">
+            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-destructive"
+                onClick={() => deleteOfferMutation.mutate(offer._id)}
+              >
+                <Trash2 size={14} />
+              </Button>
+            </div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-10 w-10 bg-amber-600 rounded-full flex items-center justify-center text-white">
+                <Zap size={20} />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-amber-900">{offer.title}</p>
+                <p className="text-xs text-amber-700">Until {new Date(offer.endDate).toLocaleDateString()}</p>
+              </div>
+            </div>
+            <p className="text-3xl font-black text-amber-600 mb-2">{offer.discountPercentage}% OFF</p>
+            <p className="text-sm text-amber-800">{offer.description}</p>
           </div>
         ))}
       </div>

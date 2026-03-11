@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { useInView } from "react-intersection-observer";
+import { useQuery } from "@tanstack/react-query";
 import {
   Sheet,
   SheetContent,
@@ -16,6 +17,7 @@ import {
   SheetTitle,
   SheetTrigger
 } from "@/components/ui/sheet";
+import { AlertCircle } from "lucide-react";
 
 export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -35,6 +37,27 @@ export default function Shop() {
   const [selectedBrand, setSelectedBrand] = useState(searchParams.get("brand") || "all");
   const [brands, setBrands] = useState<string[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+
+  const { data: config } = useQuery({
+    queryKey: ['store-config'],
+    queryFn: async () => {
+      const res = await fetch('/api/store-config');
+      return res.json();
+    }
+  });
+
+  const isStoreClosed = useMemo(() => {
+    if (!config) return false;
+    if (!config.orderingEnabled) return true;
+
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const { start, end } = config.openHours || {};
+    if (start && end) {
+      return currentTime < start || currentTime > end;
+    }
+    return false;
+  }, [config]);
 
   // Infinite Scroll state
   const [products, setProducts] = useState<any[]>([]);
@@ -189,6 +212,20 @@ export default function Shop() {
     <Layout>
       <div className="container py-8 relative">
         <h1 className="font-display text-3xl md:text-4xl font-bold mb-8">Shop Groceries</h1>
+
+        {isStoreClosed && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-8 flex items-center gap-4 text-amber-800">
+            <AlertCircle className="h-6 w-6 shrink-0" />
+            <div>
+              <p className="font-bold">
+                {!config?.orderingEnabled
+                  ? "Delivery is currently unavailable. It will be available soon."
+                  : "The store is currently closed. Delivery will be available soon."}
+              </p>
+              {config?.storeMessage && <p className="text-sm opacity-90">{config.storeMessage}</p>}
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar Filters - Desktop */}

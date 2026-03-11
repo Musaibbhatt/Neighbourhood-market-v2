@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Settings, Clock, Truck, ShieldCheck, MapPin, Save, Power, PowerOff } from 'lucide-react';
+import { Settings, Clock, Truck, ShieldCheck, MapPin, Save, Power, PowerOff, Instagram } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -155,6 +155,27 @@ const AdminSettings = () => {
                 type="number"
                 value={config.freeDeliveryThreshold}
                 onChange={(e) => setConfig({ ...config, freeDeliveryThreshold: parseFloat(e.target.value) })}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Social Media */}
+        <div className="bg-card border rounded-2xl p-6">
+          <h2 className="text-xl font-bold flex items-center gap-2 mb-6">
+            <Instagram size={20} className="text-primary" />
+            Social Media
+          </h2>
+          <div className="space-y-4">
+            <Label htmlFor="instagramUsername">Instagram Username</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+              <Input
+                id="instagramUsername"
+                className="pl-8"
+                placeholder="Neighborhood_market__"
+                value={config.instagramUsername}
+                onChange={(e) => setConfig({ ...config, instagramUsername: e.target.value })}
               />
             </div>
           </div>

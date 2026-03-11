@@ -36,6 +36,10 @@ const storeConfigSchema = new mongoose.Schema({
     openHours: {
         start: String, // e.g., "08:00"
         end: String    // e.g., "21:00"
+    },
+    instagramUsername: {
+        type: String,
+        default: 'Neighborhood_market__'
     }
 }, { timestamps: true });
 
