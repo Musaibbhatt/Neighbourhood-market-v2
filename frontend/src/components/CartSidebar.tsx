@@ -14,9 +14,20 @@ import { ShoppingCart, Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "luci
 import { Link } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import ProductCard from "./ProductCard";
+import { useQuery } from "@tanstack/react-query";
 
 const CartSidebar = ({ children }: { children: React.ReactNode }) => {
   const { cart, updateQuantity, removeFromCart, totalPrice } = useCart();
+
+  const { data: impulseItems } = useQuery({
+    queryKey: ['cart-impulse'],
+    queryFn: async () => {
+      const res = await fetch('/api/products?limit=3&isOrganic=false');
+      const data = await res.json();
+      return data.products || [];
+    }
+  });
 
   const FREE_DELIVERY_THRESHOLD = 50;
   const deliveryFee = totalPrice >= FREE_DELIVERY_THRESHOLD ? 0 : 4.99;
@@ -124,6 +135,37 @@ const CartSidebar = ({ children }: { children: React.ReactNode }) => {
                     </Button>
                   </div>
                 ))}
+              </div>
+
+              {/* Impulse Items in Cart */}
+              <div className="mt-8 pt-8 border-t">
+                <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-4">Frequently Bought Together</h4>
+                <div className="grid grid-cols-1 gap-4">
+                  {impulseItems?.filter((p: any) => !cart.find(i => i.id === p._id)).slice(0, 2).map((p: any) => (
+                    <div key={p._id} className="bg-muted/30 rounded-xl p-3 flex gap-3 items-center border border-transparent hover:border-primary/20 transition-all">
+                      <img src={p.imageURL || '/placeholder.svg'} className="w-12 h-12 rounded-lg object-cover" alt="" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold truncate">{p.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{formatCurrency(p.basePrice)}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-7 px-3 rounded-full text-[10px] font-bold"
+                        onClick={() => addToCart({
+                          id: p._id,
+                          name: p.name,
+                          price: p.basePrice,
+                          quantity: 1,
+                          image: p.imageURL || '/placeholder.svg',
+                          unit: p.unit || 'unit'
+                        })}
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </ScrollArea>
 
