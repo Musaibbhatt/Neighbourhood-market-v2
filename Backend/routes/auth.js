@@ -3,12 +3,9 @@ const router = express.Router();
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
 
 const AdminUser = require('../models/AdminUser');
 const User = require('../models/User');
-
-const isDbConnected = () => mongoose.connection.readyState === 1;
 
 
 // ==============================
@@ -19,21 +16,6 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        // If DB isn't available, fall back to a single fixed admin login for local testing
-        if (!isDbConnected()) {
-            if (email === 'admin@neighbourhoodmarket.com' && password === 'admin123') {
-                const payload = {
-                    user: {
-                        id: 'mock-admin',
-                        role: 'SuperAdmin'
-                    }
-                };
-                const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' });
-                return res.json({ token, role: 'SuperAdmin' });
-            }
-            return res.status(400).json({ message: 'Invalid Credentials' });
-        }
-
         const user = await AdminUser.findOne({ email });
 
         if (!user) {

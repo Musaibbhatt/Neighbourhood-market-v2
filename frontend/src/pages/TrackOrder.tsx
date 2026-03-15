@@ -110,6 +110,7 @@ const TrackOrder = () => {
 
   const currentStepIndex = steps.findIndex(s => s.status === order.orderStatus);
   const isCancelled = order.orderStatus === 'Cancelled';
+  const isPickup = order.deliveryType === 'Pickup';
 
   return (
     <Layout>
@@ -242,6 +243,19 @@ const TrackOrder = () => {
                 <p className="font-bold">Order Cancelled</p>
                 <p className="text-sm">This order has been cancelled and will not be fulfilled.</p>
               </div>
+            </div>
+          ) : isPickup ? (
+            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-8 text-center mb-8">
+               <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                 <Package className="h-8 w-8 text-primary animate-bounce" />
+               </div>
+               <h2 className="text-2xl font-bold text-primary mb-2">Your order is being prepared</h2>
+               <p className="text-muted-foreground">Please head to the store. We'll have it ready for you shortly!</p>
+               <div className="mt-6 flex justify-center gap-2">
+                 <span className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold uppercase">
+                   Status: {order.orderStatus}
+                 </span>
+               </div>
             </div>
           ) : (
             <div className="relative mb-12 px-4">

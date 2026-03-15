@@ -8,7 +8,6 @@ import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,15 +19,8 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const endpoint = isLogin
-        ? isAdmin
-          ? "/api/admin/login"
-          : "/api/auth/login"
-        : "/api/auth/signup";
-
-      const payload = isLogin
-        ? { email, password }
-        : { email, password, name: "New User", mobile: "0000000000" };
+      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/signup";
+      const payload = isLogin ? { email, password } : { email, password, name: "New User", mobile: "0000000000" };
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -44,15 +36,10 @@ export default function Login() {
 
       if (isLogin) {
         localStorage.setItem("token", data.token);
-
-        const userData = data.user
-          ? data.user
-          : { role: data.role || (isAdmin ? 'SuperAdmin' : 'user') };
-
-        localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("user", JSON.stringify(data.user));
         toast.success("Logged in successfully!");
 
-        if (userData.role === "admin" || userData.role === "SuperAdmin" || userData.role === "Manager") {
+        if (data.user.role === "admin") {
           window.location.href = "/admin";
         } else {
           window.location.href = "/";
@@ -89,21 +76,6 @@ export default function Login() {
               Sign Up
             </button>
           </div>
-
-          {isLogin && (
-            <div className="flex items-center gap-2 mb-6">
-              <input
-                id="admin-toggle"
-                type="checkbox"
-                checked={isAdmin}
-                onChange={(e) => setIsAdmin(e.target.checked)}
-                className="h-4 w-4 rounded border-muted"
-              />
-              <label htmlFor="admin-toggle" className="text-sm text-muted-foreground">
-                Login as Admin
-              </label>
-            </div>
-          )}
 
           <h1 className="font-display text-2xl font-bold mb-2">
             {isLogin ? "Welcome Back" : "Create Account"}

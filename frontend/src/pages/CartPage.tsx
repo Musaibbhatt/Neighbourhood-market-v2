@@ -5,9 +5,19 @@ import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
 import { formatCurrency } from "@/lib/data";
 import { Link } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Cart() {
   const { cart, updateQuantity, removeFromCart, clearCart, totalPrice } = useCart();
+
+  const { data: impulseItems } = useQuery({
+    queryKey: ['cart-page-impulse'],
+    queryFn: async () => {
+      const res = await fetch('/api/products?limit=4&isOrganic=false');
+      const data = await res.json();
+      return data.products || [];
+    }
+  });
 
   if (cart.length === 0) {
     return (
@@ -95,6 +105,35 @@ export default function Cart() {
                 </div>
               </div>
             ))}
+
+            {/* Impulse Section for Main Cart */}
+            <div className="mt-12">
+              <h2 className="text-xl font-bold mb-6">Frequently Bought Together</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {impulseItems?.filter((p: any) => !cart.find(i => i.id === p._id)).map((p: any) => (
+                  <div key={p._id} className="bg-card border rounded-2xl p-4 flex flex-col items-center text-center group hover:shadow-lg transition-all">
+                    <img src={p.imageURL || '/placeholder.svg'} className="w-20 h-20 rounded-xl object-cover mb-3" alt="" />
+                    <h3 className="text-xs font-bold line-clamp-1 mb-1">{p.name}</h3>
+                    <p className="text-xs text-primary font-black mb-3">{formatCurrency(p.basePrice)}</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full rounded-full text-[10px] h-8"
+                      onClick={() => addToCart({
+                        id: p._id,
+                        name: p.name,
+                        price: p.basePrice,
+                        quantity: 1,
+                        image: p.imageURL || '/placeholder.svg',
+                        unit: p.unit || 'unit'
+                      })}
+                    >
+                      Add to Cart
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Summary */}

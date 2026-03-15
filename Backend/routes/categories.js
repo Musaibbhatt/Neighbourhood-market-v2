@@ -1,28 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
 const Category = require('../models/Category');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
-
-const MOCK_CATEGORIES = [
-    { _id: 'cat1', name: 'Fruits' },
-    { _id: 'cat2', name: 'Vegetables' },
-    { _id: 'cat3', name: 'Bakery' },
-    { _id: 'cat4', name: 'Pantry' },
-];
-
-const isDbConnected = () => mongoose.connection.readyState === 1;
 
 // @route   GET /api/categories
 // @desc    Get all categories
 // @access  Public
 router.get('/', async (req, res) => {
     try {
-        if (!isDbConnected()) {
-            return res.json(MOCK_CATEGORIES);
-        }
-
         const categories = await Category.find().sort({ name: 1 });
         res.json(categories);
     } catch (err) {

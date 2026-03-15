@@ -135,7 +135,7 @@ export default function ProductDetail() {
           {/* Image */}
           <div className="bg-muted/50 rounded-2xl overflow-hidden aspect-square">
             <img
-              src={product.image || product.imageURL || "/placeholder.svg"}
+              src={product.image}
               alt={product.name}
               className="w-full h-full object-cover"
               onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}

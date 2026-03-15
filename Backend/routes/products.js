@@ -5,59 +5,6 @@ const Product = require('../models/Product');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
 
-const MOCK_CATEGORIES = [
-  { _id: 'cat1', name: 'Fruits' },
-  { _id: 'cat2', name: 'Vegetables' },
-  { _id: 'cat3', name: 'Bakery' },
-];
-
-const MOCK_PRODUCTS = [
-  {
-    _id: 'prod1',
-    name: 'Organic Apples',
-    brand: 'FreshFarm',
-    category: { _id: 'cat1', name: 'Fruits' },
-    basePrice: 3.99,
-    salePrice: 2.99,
-    imageURL: '/placeholder.svg',
-    stock: 12,
-    averageRating: 4.5,
-    numReviews: 12,
-    description: 'Crisp organic apples from local farms.',
-    unit: 'lb',
-  },
-  {
-    _id: 'prod2',
-    name: 'Whole Wheat Bread',
-    brand: 'BakeHouse',
-    category: { _id: 'cat3', name: 'Bakery' },
-    basePrice: 4.5,
-    salePrice: 3.99,
-    imageURL: '/placeholder.svg',
-    stock: 8,
-    averageRating: 4.8,
-    numReviews: 34,
-    description: 'Fresh baked whole wheat loaf.',
-    unit: 'loaf',
-  },
-  {
-    _id: 'prod3',
-    name: 'Baby Spinach',
-    brand: 'GreenLeaf',
-    category: { _id: 'cat2', name: 'Vegetables' },
-    basePrice: 2.99,
-    salePrice: 2.49,
-    imageURL: '/placeholder.svg',
-    stock: 15,
-    averageRating: 4.2,
-    numReviews: 19,
-    description: 'Fresh baby spinach for salads or smoothies.',
-    unit: 'bag',
-  },
-];
-
-const isDbConnected = () => mongoose.connection.readyState === 1;
-
 // @route   GET /api/products
 // @desc    Get all products (with optional search & category filter)
 // @access  Public
@@ -67,21 +14,6 @@ router.get('/', async (req, res) => {
             search, category, brand, isOrganic, isGlutenFree, isVegan, isLocal,
             tags, limit, minPrice, maxPrice, page = 1, sort
         } = req.query;
-
-        // If MongoDB is not connected, fall back to mock data for the shop.
-        if (!isDbConnected()) {
-            const itemsPerPage = limit ? parseInt(limit) : 12;
-            const currentPage = parseInt(page);
-            const start = (currentPage - 1) * itemsPerPage;
-            const paged = MOCK_PRODUCTS.slice(start, start + itemsPerPage);
-            return res.json({
-                products: paged,
-                total: MOCK_PRODUCTS.length,
-                page: currentPage,
-                pages: Math.ceil(MOCK_PRODUCTS.length / itemsPerPage)
-            });
-        }
-
         let query = {};
 
         if (search) {
@@ -188,11 +120,6 @@ router.post('/:id/stock-notify', authMiddleware, async (req, res) => {
 // @access  Public
 router.get('/brands', async (req, res) => {
     try {
-        if (!isDbConnected()) {
-            const brands = Array.from(new Set(MOCK_PRODUCTS.map(p => p.brand))).filter(Boolean);
-            return res.json(brands);
-        }
-
         const brands = await Product.distinct('brand', { brand: { $ne: '' } });
         res.json(brands);
     } catch (err) {
@@ -206,15 +133,6 @@ router.get('/brands', async (req, res) => {
 // @access  Public
 router.get('/:id/related', async (req, res) => {
     try {
-        if (!isDbConnected()) {
-            const product = MOCK_PRODUCTS.find(p => p._id === req.params.id);
-            if (!product) {
-                return res.status(404).json({ message: 'Product not found' });
-            }
-            const related = MOCK_PRODUCTS.filter(p => p.category._id === product.category._id && p._id !== product._id).slice(0, 4);
-            return res.json(related);
-        }
-
         const product = await Product.findById(req.params.id);
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
@@ -240,14 +158,6 @@ router.get('/:id/related', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
     try {
-        if (!isDbConnected()) {
-            const product = MOCK_PRODUCTS.find(p => p._id === req.params.id);
-            if (!product) {
-                return res.status(404).json({ message: 'Product not found' });
-            }
-            return res.json(product);
-        }
-
         const product = await Product.findById(req.params.id).populate('category', 'name');
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
@@ -446,9 +356,6 @@ router.post('/:id/reviews', authMiddleware, async (req, res) => {
 // @access  Public
 router.get('/:id/reviews', async (req, res) => {
     try {
-        if (!isDbConnected()) {
-            return res.json([]);
-        }
         const reviews = await Review.find({ product: req.params.id })
             .populate('user', 'name')
             .sort({ createdAt: -1 });

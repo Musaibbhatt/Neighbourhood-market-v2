@@ -32,7 +32,7 @@ router.put('/', authMiddleware, roleMiddleware('SuperAdmin'), async (req, res) =
         const {
             orderingEnabled, storeMessage, deliveryEnabled,
             freeDeliveryThreshold, defaultDeliveryFee, handlingCharge,
-            taxRate, deliveryZones, openHours
+            taxRate, deliveryZones, openHours, instagramUsername
         } = req.body;
 
         if (orderingEnabled !== undefined) config.orderingEnabled = orderingEnabled;
@@ -44,6 +44,7 @@ router.put('/', authMiddleware, roleMiddleware('SuperAdmin'), async (req, res) =
         if (taxRate !== undefined) config.taxRate = taxRate;
         if (deliveryZones !== undefined) config.deliveryZones = deliveryZones;
         if (openHours !== undefined) config.openHours = openHours;
+        if (instagramUsername !== undefined) config.instagramUsername = instagramUsername;
 
         await config.save();
         res.json(config);

@@ -125,7 +125,7 @@ export default function Checkout() {
 
       toast.success("Order placed successfully! 🎉");
       clearCart();
-      navigate("/track/" + orderData._id);
+      navigate(\`/track/\${orderData._id}\`);
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -388,7 +388,3 @@ export default function Checkout() {
     </Layout>
   );
 }
-function useEffect(arg0: () => void, arg1: string[]) {
-  throw new Error("Function not implemented.");
-}
-

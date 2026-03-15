@@ -30,6 +30,8 @@ export const categories = [
   { id: "meat", name: "Meat & Seafood", icon: "🥩", image: "/placeholder.svg" },
   { id: "beverages", name: "Beverages", icon: "🥤", image: "/placeholder.svg" },
   { id: "pantry", name: "Pantry Staples", icon: "🥫", image: "/placeholder.svg" },
+  { id: "snacks", name: "Snacks & Sweets", icon: "🍪", image: "/placeholder.svg" },
+  { id: "household", name: "Household", icon: "🔋", image: "/placeholder.svg" },
 ];
 
 export const products: Product[] = [
@@ -92,6 +94,26 @@ export const products: Product[] = [
     id: "12", name: "Croissants", brand: "ArtisanBake", category: "bakery",
     basePrice: 4.99, salePrice: 3.99, image: "https://images.unsplash.com/photo-1555507036-ab1f4038024a?w=400&h=400&fit=crop",
     stock: 18, averageRating: 4.8, reviewCount: 145, description: "Buttery, flaky croissants baked fresh daily.", unit: "4-pack"
+  },
+  {
+    id: "13", name: "Potato Chips", brand: "CrunchCo", category: "snacks",
+    basePrice: 3.49, image: "https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=400&h=400&fit=crop",
+    stock: 42, averageRating: 4.2, reviewCount: 88, description: "Classic salted potato chips, extra crunchy.", unit: "bag"
+  },
+  {
+    id: "14", name: "Sparkling Water", brand: "Bubbles", category: "beverages",
+    basePrice: 1.29, image: "https://images.unsplash.com/photo-1551731589-23a9d59ca18c?w=400&h=400&fit=crop",
+    stock: 100, averageRating: 4.6, reviewCount: 210, description: "Refreshing lime flavored sparkling water.", unit: "can"
+  },
+  {
+    id: "15", name: "AA Batteries", brand: "PowerCell", category: "household",
+    basePrice: 8.99, image: "https://images.unsplash.com/photo-1502444330042-d1a1ddf9bb5c?w=400&h=400&fit=crop",
+    stock: 15, averageRating: 4.7, reviewCount: 56, description: "Long-lasting alkaline AA batteries, 8 pack.", unit: "pack"
+  },
+  {
+    id: "16", name: "Dark Chocolate Bar", brand: "CocoaPure", category: "snacks",
+    basePrice: 2.99, image: "https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=400&h=400&fit=crop",
+    stock: 25, averageRating: 4.9, reviewCount: 134, description: "70% cocoa organic dark chocolate.", unit: "bar"
   },
 ];
 

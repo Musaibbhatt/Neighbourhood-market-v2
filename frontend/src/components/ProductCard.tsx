@@ -78,7 +78,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Image */}
         <div className="relative aspect-square bg-muted/50 overflow-hidden">
           <img
-            src={product.image || product.imageURL || "/placeholder.svg"}
+            src={product.image}
             alt={product.name}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"

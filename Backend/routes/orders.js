@@ -1,15 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
 
 const User = require('../models/User');
-
-const MOCK_ORDERS = [];
-const generateMockId = () => `mock_${Math.random().toString(16).slice(2)}_${Date.now()}`;
-const isDbConnected = () => mongoose.connection.readyState === 1;
 
 // @route   POST /api/orders
 // @desc    Create new order
@@ -24,35 +19,6 @@ router.post('/', async (req, res) => {
 
         if (!products || products.length === 0) {
             return res.status(400).json({ message: 'No order items' });
-        }
-
-        // If DB is not connected, create a mock order for testing
-        if (!isDbConnected()) {
-            const mockOrder = {
-                _id: generateMockId(),
-                createdAt: new Date(),
-                user: userId || null,
-                customerName,
-                phone,
-                address,
-                deliveryType: orderType || 'Delivery',
-                products,
-                subtotal,
-                deliveryFee: deliveryFee || 0,
-                handlingFee: handlingFee || 0,
-                tax: tax || 0,
-                tipAmount: tip || 0,
-                totalPrice,
-                discountAmount: discountAmount || 0,
-                couponCode: couponCode || null,
-                paymentMethod: paymentMethod || 'Cash',
-                orderStatus: 'Order Received',
-                statusHistory: [{ status: 'Order Received', timestamp: new Date() }],
-                notes,
-            };
-
-            MOCK_ORDERS.push(mockOrder);
-            return res.status(201).json(mockOrder);
         }
 
         // Try to get user from token if available
@@ -112,10 +78,6 @@ router.post('/', async (req, res) => {
 // @access  Private (SuperAdmin, Manager, Staff)
 router.get('/', authMiddleware, roleMiddleware('SuperAdmin', 'Manager', 'Staff'), async (req, res) => {
     try {
-        if (!isDbConnected()) {
-            return res.json(MOCK_ORDERS);
-        }
-
         const orders = await Order.find().sort({ createdAt: -1 }).populate('products.product', 'name imageURL');
         res.json(orders);
     } catch (err) {
@@ -164,11 +126,6 @@ router.get('/export', authMiddleware, roleMiddleware('SuperAdmin', 'Manager'), a
 // @access  Private
 router.get('/my-orders', authMiddleware, async (req, res) => {
     try {
-        if (!isDbConnected()) {
-            const myOrders = MOCK_ORDERS.filter(o => o.user === req.user.id);
-            return res.json(myOrders);
-        }
-
         const orders = await Order.find({ user: req.user.id }).sort({ createdAt: -1 });
         res.json(orders);
     } catch (err) {
@@ -180,13 +137,7 @@ router.get('/my-orders', authMiddleware, async (req, res) => {
 // @desc    Get order by id
 router.get('/:id', async (req, res) => {
     try {
-if (!isDbConnected()) {
-        const order = MOCK_ORDERS.find(o => o._id === req.params.id);
-        if (!order) return res.status(404).json({ message: 'Order not found' });
-        return res.json(order);
-    }
-
-    const order = await Order.findById(req.params.id);
+        const order = await Order.findById(req.params.id);
         if (!order) return res.status(404).json({ message: 'Order not found' });
         res.json(order);
     } catch (err) {
@@ -198,21 +149,6 @@ if (!isDbConnected()) {
 // @desc    Cancel order (Public/Customer)
 router.put('/:id/cancel', async (req, res) => {
     try {
-        if (!isDbConnected()) {
-            const order = MOCK_ORDERS.find(o => o._id === req.params.id);
-            if (!order) return res.status(404).json({ message: 'Order not found' });
-
-            if (order.orderStatus !== 'Order Received') {
-                return res.status(400).json({ message: 'Order cannot be cancelled at this stage.' });
-            }
-
-            order.orderStatus = 'Cancelled';
-            order.isCancelled = true;
-            order.statusHistory.push({ status: 'Cancelled', timestamp: new Date() });
-
-            return res.json(order);
-        }
-
         const order = await Order.findById(req.params.id);
         if (!order) return res.status(404).json({ message: 'Order not found' });
 

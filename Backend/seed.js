@@ -44,6 +44,8 @@ const seedData = async () => {
         const catProduce = await Category.create({ name: 'Fruits & Vegetables', description: 'Fresh fruits and vegetables.' });
         const catPantry = await Category.create({ name: 'Pantry Staples', description: 'Rice, oil, sugar, spices, and essentials.' });
         const catMeat = await Category.create({ name: 'Meat & Sea', description: 'Fresh meat and seafood.' });
+        const catSnacks = await Category.create({ name: 'Snacks & Sweets', description: 'Cookies, chips, and chocolate.' });
+        const catHousehold = await Category.create({ name: 'Household', description: 'Batteries, cleaning, and more.' });
 
         // 4. Seed Products
         const prodData = [
@@ -93,6 +95,33 @@ const seedData = async () => {
                 category: catPantry._id,
                 imageURL: 'images/product_placeholder.svg',
                 brand: 'India Gate'
+            },
+            {
+                name: 'Potato Chips',
+                description: 'Classic salted potato chips, extra crunchy.',
+                basePrice: 3.49,
+                stock: 42,
+                category: catSnacks._id,
+                imageURL: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=400&h=400&fit=crop',
+                brand: 'CrunchCo'
+            },
+            {
+                name: 'AA Batteries (8pk)',
+                description: 'Long-lasting alkaline AA batteries.',
+                basePrice: 8.99,
+                stock: 15,
+                category: catHousehold._id,
+                imageURL: 'https://images.unsplash.com/photo-1502444330042-d1a1ddf9bb5c?w=400&h=400&fit=crop',
+                brand: 'PowerCell'
+            },
+            {
+                name: 'Sparkling Water',
+                description: 'Refreshing lime flavored sparkling water.',
+                basePrice: 1.29,
+                stock: 100,
+                category: catProduce._id, // Using produce for now or maybe Beverages? Let's stick to produce if it exists or seed a beverage cat.
+                imageURL: 'https://images.unsplash.com/photo-1551731589-23a9d59ca18c?w=400&h=400&fit=crop',
+                brand: 'Bubbles'
             }
         ];
 
